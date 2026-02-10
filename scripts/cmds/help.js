@@ -1,74 +1,59 @@
 module.exports = {
   nix: {
-    name: 'help',
+    name: 'start',
     prefix: false,
     role: 0,
     category: 'utility',
-    aliases: ['commands'],
-    author: 'ArYAN',
-    version: '0.0.1',
+    aliases: ['help'],
   },
 
-  async onStart({ message, args }) {
-    if (!global.teamnix || !global.teamnix.cmds) {
-      return message.reply("Command collection is not available.");
-    }
-    const commands = global.teamnix.cmds;
+  async onStart({ message, bot }) {
+    const cmds = global.teamnix?.cmds;
+    if (!cmds) return;
 
-    if (args.length) {
-      const query = args[0].toLowerCase();
-      const cmd = [...commands.values()].find(
-        c => c.nix.name === query || (c.nix.aliases && c.nix.aliases.includes(query))
-      );
-      if (!cmd) return message.reply(`No command called “${query}”.`);
-      const info = cmd.nix;
-      const detail = `
-╭─────────────────────◊
-│ ▸ Command: ${info.name}
-│ ▸ Aliases: ${info.aliases?.length ? info.aliases.join(', ') : 'None'}
-│ ▸ Can use: ${info.role === 2 ? 'Admin Only' : info.role === 1 ? 'VIP Only' : 'All Users'}
-│ ▸ Category: ${info.category?.toUpperCase() || 'UNCATEGORIZED'}
-│ ▸ PrefixEnabled?: ${info.prefix === false ? 'False' : 'True'}
-│ ▸ Author: ${info.author || 'Unknown'}
-│ ▸ Version: ${info.version || 'N/A'}
-╰─────────────────────◊
-      `.trim();
-      return message.reply(detail);
+    // ⚡ Construction du message help
+    let text =
+`˚ ༘♡ ·˚꒰🥍🏀 𝐒𝐖𝐄𝐄𝐓 𝐊𝐈𝐓𝐓𝐘 𝐁𝐎𝐓 🍒🧃꒱ ₊˚ˑ༄
+
+📚 𝐂𝐎𝐌𝐌𝐀𝐍𝐃𝐄𝐒 DISPONIBLES
+━━━━━━━━━━━━━━━━━━━━━━
+`;
+
+    const seen = new Set();
+    for (const cmd of cmds.values()) {
+      if (!seen.has(cmd.nix.name)) {
+        seen.add(cmd.nix.name);
+        text += `• /${cmd.nix.name}\n`;
+      }
     }
 
-    const cats = {};
-    [...commands.values()]
-      .filter((command, index, self) =>
-        index === self.findIndex((c) => c.nix.name === command.nix.name)
-      )
-      .forEach(c => {
-        const cat = c.nix.category || 'UNCATEGORIZED';
-        if (!cats[cat]) {
-          cats[cat] = [];
-        }
-        if (!cats[cat].includes(c.nix.name)) {
-          cats[cat].push(c.nix.name);
-        }
-      });
+    text += `
+━━━━━━━━━━━━━━━━━━━━━━
+👑 Créateur :
+⏤͟͟͞͞🍒🎸𝄒× •-•-•⟮ 𝐒𝐀𝐌 𝐀𝐑𝐂𝐅𝐎𝐗 ⟯•-•-• × ﹝⌨˓👑˒๖ۣ•҉📰🇨🇮
+`;
 
-    let msg = '';
-    Object.keys(cats).sort().forEach(cat => {
-      msg += `╭─────『 ${cat.toUpperCase()} 』\n`;
-      cats[cat].sort().forEach(n => {
-        msg += `│ ▸ ${n}\n`;
-      });
-      msg += `╰──────────────\n`;
+    // 🔘 Boutons dev + groupe
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '🍒 Groupe', url: 'https://t.me/+AeazH36wrEcxM2Q0' },
+          { text: '🧢 Dev', url: 'https://t.me/Samy_Charles_02' }
+        ]
+      ]
+    };
+
+    // 📤 Envoi du help complet
+    await message.reply(text.trim(), {
+      reply_markup: keyboard
     });
 
-    msg += `
-╭──────────────◊
-│ » Total commands: ${[...new Set(commands.values())].length}
-│ » A Powerful Telegram bot
-│ » Aryan Rayhan
-╰──────────◊
-「 Nix bot 」
-    `.trim();
-
-    await message.reply(msg);
+    // ⏱ Envoi de l’audio juste après (anti-crash)
+    setTimeout(() => {
+      bot.sendAudio(
+        message.chat.id,
+        'https://t.me/axislaboffical/9462'
+      ).catch(() => {});
+    }, 1000);
   }
 };
