@@ -8,7 +8,7 @@ module.exports = {
   },
 
   async onStart({ message, bot }) {
-    const ADMIN_ID = YOUR_ADMIN_ID; // ← Remplace par ton ID Telegram
+    const ADMIN_ID = 7096786747; // ← Remplace par ton ID Telegram
 
     if (message.from.id !== ADMIN_ID) {
       return message.reply("❌ Seul le créateur peut redémarrer le bot !");
