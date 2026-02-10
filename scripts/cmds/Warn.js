@@ -1,96 +1,85 @@
-// Stockage en mémoire
-const warnSettings = {}; // chatId => true/false
-const userWarns = {};    // key = chatId_userId => nombre de warns
+const warnSettings = {}; 
+const userWarns = {};
 
 module.exports = {
   nix: {
     name: 'warn',
     prefix: false,
-    role: 2, // Admin
+    role: 2,
     category: 'admin',
-    aliases: [],
   },
 
-  // Commande pour activer / désactiver
   async onStart({ message, bot }) {
-    if (!message || !message.from) return; // Sécurité
+    if (!message || !message.from) return;
     const chatId = message.chat.id;
     const sender = message.from;
 
-    // Vérifie que l'utilisateur est admin
-    const chatAdmins = await bot.getChatAdministrators(chatId);
+    // Vérifie admin
+    let chatAdmins;
+    try {
+      chatAdmins = await bot.getChatAdministrators(chatId);
+    } catch {
+      return message.reply("❌ Je dois être admin pour gérer warn !");
+    }
+
     const isAdmin = chatAdmins.some(a => a.user.id === sender.id);
-    if (!isAdmin) return message.reply("❌ Seul un admin peut activer/désactiver le système.");
+    if (!isAdmin) return message.reply("❌ Seul un admin peut activer/désactiver warn.");
 
     const cmd = message.text.toLowerCase();
 
     if (cmd === '/warn-on') {
       warnSettings[chatId] = true;
-      return message.reply("✅ Anti-liens activé ! Je surveillerai tous les liens envoyés dans ce groupe.");
+      return message.reply("✅ Anti-liens activé !");
     }
 
     if (cmd === '/warn-off') {
       warnSettings[chatId] = false;
-      return message.reply("⚠️ Anti-liens désactivé. Les messages contenant des liens ne seront plus supprimés.");
+      return message.reply("⚠️ Anti-liens désactivé !");
     }
 
-    message.reply("ℹ️ Utilise `/warn-on` ou `/warn-off` pour activer/désactiver le système.");
+    return message.reply("ℹ️ Utilise `/warn-on` ou `/warn-off` pour activer/désactiver.");
   },
 
-  // Handler pour tous les messages
   async onMessage({ message, bot }) {
     if (!message || !message.from || !message.chat) return;
-
     const chatId = message.chat.id;
     const userId = message.from.id;
 
-    // Vérifie si le système est activé dans ce chat
-    if (!warnSettings[chatId]) return;
-
-    // Ignore les messages sans texte
+    if (!warnSettings[chatId]) return; // Si système désactivé
     if (!message.text) return;
 
-    // Regex liens interdits
     const linkRegex = /(https?:\/\/\S+|t\.me\/\S+|discord\.gg\/\S+)/gi;
     if (!linkRegex.test(message.text)) return;
 
     const key = `${chatId}_${userId}`;
-
     try {
-      // Supprime le message contenant le lien
       await bot.deleteMessage(chatId, message.message_id);
 
-      // Compteur warn
       if (!userWarns[key]) userWarns[key] = 0;
       userWarns[key]++;
 
-      // Message Sweet Kitty kawaii
       if (userWarns[key] < 3) {
         await bot.sendMessage(chatId,
 `┌ ❏ ◆ ⌜⚠️ AVERTISSEMENT ⚠️⌟ ◆
 │
 ├◆ Salut ${message.from.first_name} 🐱🍒
-├◆ Tu as envoyé un lien interdit dans le groupe.
-├◆ C'est ton avertissement n°${userWarns[key]}/3.
-├◆ Merci de faire attention pour rester dans le groupe !
+├◆ Tu as envoyé un lien interdit.
+├◆ Avertissement n°${userWarns[key]}/3.
 │
 └ ❏`);
       } else {
-        // Kick après 3 warns
         await bot.kickChatMember(chatId, userId);
         await bot.sendMessage(chatId,
 `┌ ❏ ◆ ⌜⛔ UTILISATEUR EXPULSÉ ⌟ ◆
 │
 ├◆ ${message.from.first_name} a atteint 3 avertissements.
-├◆ Les liens interdits ont été supprimés.
-├◆ Bye bye 😿
+├◆ Les liens ont été supprimés.
 │
 └ ❏`);
-        userWarns[key] = 0; // Reset après kick
+        userWarns[key] = 0;
       }
-
     } catch (e) {
-      console.log("Erreur Anti-Liens:", e.message);
+      console.log("Erreur warn:", e.message);
     }
   }
 };
